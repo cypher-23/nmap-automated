@@ -1,0 +1,163 @@
+#!/bin/python3
+
+# dependency check for the modules
+try: 
+	import os
+	import subprocess
+	import sys
+	import re
+	from colorama import Fore, Back, Style
+	import fileinput
+except ModuleNotFoundError:
+	print('run the requirements.txt file to have all the requirements satisfied')
+
+
+
+print(Fore.RED + '''
+
+███╗░░██╗███╗░░░███╗░█████╗░██████╗░  ░░░░░░  ░█████╗░██╗░░░██╗████████╗░█████╗░
+████╗░██║████╗░████║██╔══██╗██╔══██╗  ░░░░░░  ██╔══██╗██║░░░██║╚══██╔══╝██╔══██╗
+██╔██╗██║██╔████╔██║███████║██████╔╝  █████╗  ███████║██║░░░██║░░░██║░░░██║░░██║
+██║╚████║██║╚██╔╝██║██╔══██║██╔═══╝░  ╚════╝  ██╔══██║██║░░░██║░░░██║░░░██║░░██║
+██║░╚███║██║░╚═╝░██║██║░░██║██║░░░░░  ░░░░░░  ██║░░██║╚██████╔╝░░░██║░░░╚█████╔╝
+╚═╝░░╚══╝╚═╝░░░░░╚═╝╚═╝░░╚═╝╚═╝░░░░░  ░░░░░░  ╚═╝░░╚═╝░╚═════╝░░░░╚═╝░░░░╚════╝░
+	'''
+	)
+
+print(Fore.GREEN + '''
+𝔸𝕦𝕥𝕙𝕠𝕣𝕤:
+𝕔𝕪𝕡𝕙𝕖𝕣𝟚𝟛
+𝟜ℤ𝟜ℝ𝟜𝟛𝕃
+	''' + Style.RESET_ALL
+	)
+#print()
+
+
+
+
+# check dependencies
+try:
+	cmd1 = subprocess.Popen(["nmap"],
+					stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE)
+
+except FileNotFoundError:
+	print('run the requirements.txt file to have all the requirements satisfied')
+
+
+
+# check for index input
+try:
+	var_1 = sys.argv[1]
+
+except IndexError:
+	print('Put a valid switch or use -h switch to see the list of options')
+
+
+
+# check for the input
+try:
+	if (var_1 == '-h'):
+		print('Help Menu:')
+		print('Run the script as root')
+		print('syntax: ./nmap-scanner <ip>')
+
+		sys.exit() 
+
+except:
+	sys.exit()
+
+f = open("Parsing_file.txt", "w+")
+
+#check for a valid IP address
+def ip_check(ip):
+	regex = "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
+	if (re.search(regex, var_1)) :
+		return 1;
+	else:
+		return 0;
+
+#Ping Check
+def ping_check(ip):
+	check = os.system(f"ping -c 1  {ip} > /dev/null 2>&1")
+	return check
+
+
+# enter the scanner
+if (ip_check(var_1)):
+	try:
+		#SCANNER
+		if((ping_check(var_1)) != 0):
+			#print("123")
+			print("Seems like Host is not up yet or not responding to ICMP ping")
+			Cont_Flag = str(input(Fore.GREEN +'If you wish to continue the scan with the -Pn switch press Y: '+ Style.RESET_ALL))
+			if(Cont_Flag == 'y'):
+				cmd = subprocess.run(["nmap", "-p-", "-Pn", "-T4", var_1], stdout=f)
+
+			else:
+				sys.exit()
+		else:
+			#print("258")
+			cmd = subprocess.run(["nmap", "-p-", "-T4", var_1], stdout=f)
+		
+		
+			
+
+	except KeyboardInterrupt:
+		sys.exit()		
+
+#else of the scanner if
+else:
+	print('''whoops!! The script recieved an invalid argument.
+		Please check your ip address or use the -h switch to get a list of commands''')
+	sys.exit()
+
+
+f.close() # to support the overwriting functionality
+## OUTPUT THE RESULT IN A FILE TO BE PARSED
+## Reading the file and parsing the O/P.
+
+#for line in f.readlines():
+#	data = re.findall(r'[0-9]+/', a)
+#	final_port_list = [x[:-1] for x in data]
+#print (final_port_list)
+x = open("Parsing_file.txt")
+Parse = x.read()
+#print("X")
+#print(Parse)
+data = (re.findall(r'[0-9]+/', Parse))
+data = [x[:-1] for x in data]
+#print(data)
+listToStr = ','.join([str(elem) for elem in data])
+#print(listToStr)
+#f.close()
+# Put that list as an argument in the nmap syntax: nmap -p [list] -T4 -A
+#x=open("Parsing_file.txt","w")
+#for i in data:
+#	x.write(i)
+#	x.write('\n')
+#f.close()
+
+#f = open("Parsing_file.txt","r")
+try:
+	cmd = subprocess.run(["nmap", "-p",listToStr, "-A", "-T4", var_1])#, stdout=f)
+
+
+except KeyboardInterrupt:
+	sys.exit()
+
+
+
+#cmd = os.system(f"nmap -T4 -A -p {Parsing_file.txt} {var_1}")
+
+#cmd = subprocess.run(["nmap", "-p-", "-T4", var_1], stdout=f)   
+
+
+## Output the whole 
+
+
+
+## Additional Menu
+## Logic: if port in list then use the expoitation tools within the distro
+ 
+
