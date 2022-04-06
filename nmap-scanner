@@ -8,6 +8,10 @@ try:
 	import re
 	from colorama import Fore, Back, Style
 	import fileinput
+	import requests
+	from urllib.request import urlopen
+	from urllib.error import *
+	from ftplib import FTP
 except ModuleNotFoundError:
 	print('run the requirements.txt file to have all the requirements satisfied')
 
@@ -36,15 +40,6 @@ print(Fore.GREEN + '''
 
 
 # check dependencies
-try:
-	cmd1 = subprocess.Popen(["nmap"],
-					stdout=subprocess.PIPE, 
-                    stderr=subprocess.PIPE)
-
-except FileNotFoundError:
-	print('run the requirements.txt file to have all the requirements satisfied')
-
-
 
 # check for index input
 try:
@@ -52,7 +47,6 @@ try:
 
 except IndexError:
 	print('Put a valid switch or use -h switch to see the list of options')
-
 
 
 # check for the input
@@ -71,6 +65,7 @@ f = open("Parsing_file.txt", "w+")
 
 #check for a valid IP address
 def ip_check(ip):
+	""" checks input is a valid IP or not"""
 	regex = "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
 	if (re.search(regex, var_1)) :
 		return 1;
@@ -79,12 +74,51 @@ def ip_check(ip):
 
 #Ping Check
 def ping_check(ip):
+	""" checks for ICMP ping"""
 	check = os.system(f"ping -c 1  {ip} > /dev/null 2>&1")
 	return check
 
+def dependency_checks(tool):
+	""" Checks the dependencies for the tools that are going to be"""
+	try:
+		cmd1 = subprocess.Popen(["tool"],
+				stdout=subprocess.PIPE, 
+				stderr=subprocess.PIPE)
 
-# enter the scanner
+	except FileNotFoundError:
+		print('run the requirements.txt file to have all the requirements satisfied')
+
+def web_scanner(ip):
+	"""check for a webpage"""
+	open_ports = []
+	url1="http://{}:80".format(ip)
+	#	url2="https://{}:80".format(ip)
+	url2="http://{}:8080".format(ip)
+	#	url4="https://{}:8080".format(ip)
+	response = requests.get(url1)
+	if response != 200:
+		print(response)
+		open_ports.append('80')
+	
+	response = requests.get(url2)
+	if response != 200:
+		print(response)
+		open_ports.append('8080')
+
+	try:
+		requests.get(url1)
+	except ConnectionError:
+		print("looks like tere is no service running on this port")
+
+	try:
+		requests.get(url2)
+	except ConnectionError:
+		print("looks like tere is no service running on this port")
+
+
+####### enter the Network-scanner ########
 if (ip_check(var_1)):
+	dependency_checks(nmap)
 	try:
 		#SCANNER
 		if((ping_check(var_1)) != 0):
@@ -97,7 +131,6 @@ if (ip_check(var_1)):
 			else:
 				sys.exit()
 		else:
-			#print("258")
 			cmd = subprocess.run(["nmap", "-p-", "-T4", var_1], stdout=f)
 		
 		
@@ -114,50 +147,80 @@ else:
 
 
 f.close() # to support the overwriting functionality
-## OUTPUT THE RESULT IN A FILE TO BE PARSED
-## Reading the file and parsing the O/P.
 
-#for line in f.readlines():
-#	data = re.findall(r'[0-9]+/', a)
-#	final_port_list = [x[:-1] for x in data]
-#print (final_port_list)
+##### OUTPUT THE RESULT IN A FILE TO BE PARSED #####
 x = open("Parsing_file.txt")
 Parse = x.read()
-#print("X")
-#print(Parse)
+
 data = (re.findall(r'[0-9]+/', Parse))
 data = [x[:-1] for x in data]
-#print(data)
-listToStr = ','.join([str(elem) for elem in data])
-#print(listToStr)
-#f.close()
-# Put that list as an argument in the nmap syntax: nmap -p [list] -T4 -A
-#x=open("Parsing_file.txt","w")
-#for i in data:
-#	x.write(i)
-#	x.write('\n')
-#f.close()
 
-#f = open("Parsing_file.txt","r")
+listToStr = ','.join([str(elem) for elem in data])
+
 try:
-	cmd = subprocess.run(["nmap", "-p",listToStr, "-A", "-T4", var_1])#, stdout=f)
+	cmd = subprocess.run(["nmap", "-p",listToStr, "-A", "-T4", var_1])
 
 
 except KeyboardInterrupt:
 	sys.exit()
 
 
-
-#cmd = os.system(f"nmap -T4 -A -p {Parsing_file.txt} {var_1}")
-
-#cmd = subprocess.run(["nmap", "-p-", "-T4", var_1], stdout=f)   
-
-
 ## Output the whole 
-
-
-
 ## Additional Menu
+print("you wish to continue")
+q = open("buffer.txt", "w+")
+#web_scanner( var_1 )
+
+######### Web Tools ##########
+if 80 or 8080 in listToStr:
+	dependency_checks(nikto)
+
+	print("Entering a Nikto scan because we found either port 80 or 8080 in the nmap scan")
+	try:
+		cmd = subprocess.run(["nikto", "-h", var_1,":","80"])
+		cmd = subprocess.run(["nikto", "-h", var_1,":","8080"])
+	
+	except KeyboardInterrupt:
+		sys.exit()
+#check for wordpress site for exploitation
+#curl "http://{}:80".format(var_1)
+#web_scanner(var_1)
+
+###### webscanner ########
+try:
+    html = urlopen("http://{}:80".format(var_1))
+
+except HTTPError as e:
+    print("HTTP error", e)
+     
+except URLError as e:
+    print("Opps ! Page not found!")
+ 
+else:
+	print("entering wp scan")
+
+
+# If found FTP
+####### FTP SECTION #######
+if 21 in listToStr:
+	try:
+		ftp = FTP(var_1)   # connect to host, default port
+		ftp.login()
+		print("Login Successfull here is the file structure")
+		files = ftp.dir()
+		print(files)
+
+	except ConnectionResetError:
+		print('Cant connect!!')
+
+## SMB File check
+## any custom ports
+## go buster
+## A file will be created by the name of Report.txt that will have all the open services listed.!!
+
+
+    
+
 ## Logic: if port in list then use the expoitation tools within the distro
  
 
